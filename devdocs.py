@@ -7,6 +7,12 @@ import sublime_plugin
 import subprocess
 import webbrowser
 
+from os.path import basename
+from os.path import splitext
+
+def GetLanguageFromView(view):
+    language = splitext(basename(view.settings().get('syntax')))[0]
+    return language if ' ' not in language else ""
 
 def SearchFor(text):
     url = 'http://devdocs.io/#q=' + text.replace(' ', '%20')
@@ -15,12 +21,15 @@ def SearchFor(text):
 
 class DevDocsSearchSelectionCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        for selection in self.view.sel():
-            # if the user didn't select anything, search the currently highlighted word
-            if selection.empty():
-                text = self.view.word(selection)
 
+        for selection in self.view.sel():
+            
+            # if the user didn't select anything, search the word under curson
+            if selection.empty():
+                selection = self.view.word(selection)
+                
             text = self.view.substr(selection)
+            text = GetLanguageFromView(self.view) + ' ' + text
             SearchFor(text)
 
 
@@ -31,6 +40,7 @@ class DevDocsSearchFromInputCommand(sublime_plugin.WindowCommand):
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
+        input = GetLanguageFromView(self.window.active_view()) + ' ' + input
         SearchFor(input)
 
     def on_change(self, input):
